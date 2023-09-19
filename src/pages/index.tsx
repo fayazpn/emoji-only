@@ -7,6 +7,10 @@ import { api } from "~/utils/api";
 export default function Home() {
   const { isLoaded, isSignedIn, user } = useUser();
   console.log(user)
+
+  const {data} = api.posts.getAll.useQuery()
+
+  console.log(data)
   return (
     <>
       <Head>
