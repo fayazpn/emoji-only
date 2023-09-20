@@ -1,30 +1,39 @@
-
-import { SignInButton, SignOutButton, useUser } from "@clerk/nextjs";
+import { SignInButton, useUser } from "@clerk/nextjs";
 import Head from "next/head";
 
 import { api } from "~/utils/api";
 
 function CreatePostWizard() {
-  const {user} = useUser();
+  const { user } = useUser();
 
-  if(!user) return null
+  if (!user) return null;
 
   return (
-  <div className="flex gap-3 ">
-    <img src={user.imageUrl} alt="Profile Image" className="rounded-full h-16 w-16"/>
-    <input type="text" className="bg-transparent outline-none grow" placeholder="Type some emojis to tweet"/>
-  </div>
-  )
+    <div className="flex gap-3 ">
+      <img
+        src={user.imageUrl}
+        alt="Profile Image"
+        className="h-16 w-16 rounded-full"
+      />
+      <input
+        type="text"
+        className="grow bg-transparent outline-none"
+        placeholder="Type some emojis to tweet"
+      />
+    </div>
+  );
 }
 
 export default function Home() {
-  const {  isSignedIn, user } = useUser();
+  const { isSignedIn, user } = useUser();
 
-  const {data, isLoading} = api.posts.getAll.useQuery()
+  const { data, isLoading } = api.posts.getAll.useQuery();
 
-  if(isLoading) return <div>Loading data...</div>
+  console.log(data);
 
-  if(!data) return <div>Sorry something went wrong!</div>
+  if (isLoading) return <div>Loading data...</div>;
+
+  if (!data) return <div>Sorry something went wrong!</div>;
 
   return (
     <>
@@ -34,18 +43,23 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className="flex h-screen justify-center">
-        <div className="w-full md:max-w-2xl border-x border-slate-400">
-        <div className=" w-full  p-4 border-b border-slate-400">
-        {!isSignedIn && <div className="flex justify-center">
-          <SignInButton /> 
-        </div> 
-        }
-        {isSignedIn && <CreatePostWizard />}
-        </div>
-          
-        <div>
-          {data?.map((post) => (<div key={post.id} className="p-8 border-b">{post.content}</div>))}
-        </div>
+        <div className="w-full border-x border-slate-400 md:max-w-2xl">
+          <div className=" w-full  border-b border-slate-400 p-4">
+            {!isSignedIn && (
+              <div className="flex justify-center">
+                <SignInButton />
+              </div>
+            )}
+            {isSignedIn && <CreatePostWizard />}
+          </div>
+
+          <div>
+            {data?.map((post) => (
+              <div key={post.id} className="border-b p-8">
+                {post.content}
+              </div>
+            ))}
+          </div>
         </div>
       </main>
     </>
