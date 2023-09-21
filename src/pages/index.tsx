@@ -1,7 +1,7 @@
 import { SignInButton, useUser } from "@clerk/nextjs";
 import Head from "next/head";
 
-import { api } from "~/utils/api";
+import { type RouterOutputs, api } from "~/utils/api";
 
 function CreatePostWizard() {
   const { user } = useUser();
@@ -9,7 +9,7 @@ function CreatePostWizard() {
   if (!user) return null;
 
   return (
-    <div className="flex gap-3 ">
+    <div className="flex gap-3">
       <img
         src={user.imageUrl}
         alt="Profile Image"
@@ -24,12 +24,33 @@ function CreatePostWizard() {
   );
 }
 
+type PostWithUser = RouterOutputs["posts"]["getAll"][number];
+
+const PostView = (props: PostWithUser) => {
+  const { author, content } = props;
+  return (
+    <div className="flex gap-3 border-b border-slate-400 p-8" key={props.id}>
+      <img
+        src={author.imageUrl}
+        alt="Profile Image"
+        className="h-16 w-16 rounded-full"
+      />
+      <div className="flex flex-col">
+        <div className="flex gap-2 text-slate-300">
+          <span>{`@${author.username}`}</span>
+          <span>·</span>
+          <span>1 hour ago</span>
+        </div>
+        <span>{content}</span>
+      </div>
+    </div>
+  );
+};
+
 export default function Home() {
-  const { isSignedIn, user } = useUser();
+  const { isSignedIn } = useUser();
 
   const { data, isLoading } = api.posts.getAll.useQuery();
-
-  console.log(data);
 
   if (isLoading) return <div>Loading data...</div>;
 
@@ -53,13 +74,7 @@ export default function Home() {
             {isSignedIn && <CreatePostWizard />}
           </div>
 
-          <div>
-            {data?.map((post) => (
-              <div key={post.id} className="border-b p-8">
-                {post.content}
-              </div>
-            ))}
-          </div>
+          <div>{data?.map((post) => <PostView {...post} key={post.id} />)}</div>
         </div>
       </main>
     </>
