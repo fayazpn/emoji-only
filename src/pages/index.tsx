@@ -3,9 +3,11 @@ import Head from "next/head";
 
 import { type RouterOutputs, api } from "~/utils/api";
 import dayjs from "dayjs";
-import relativeTime from 'dayjs/plugin/relativeTime'
+import relativeTime from "dayjs/plugin/relativeTime";
+import Image from "next/image";
+import {  PageLoader } from "~/components/Loading";
 
-dayjs.extend(relativeTime)
+dayjs.extend(relativeTime);
 
 function CreatePostWizard() {
   const { user } = useUser();
@@ -14,10 +16,12 @@ function CreatePostWizard() {
 
   return (
     <div className="flex gap-3">
-      <img
+      <Image
         src={user.imageUrl}
         alt="Profile Image"
-        className="h-16 w-16 rounded-full"
+        className="rounded-full"
+        height={64}
+        width={64}
       />
       <input
         type="text"
@@ -32,16 +36,20 @@ type PostWithUser = RouterOutputs["posts"]["getAll"][number];
 
 const PostView = (props: PostWithUser) => {
   const { author, content, createdAt } = props;
+
+  // Todo make the profile blur
   return (
     <div className="flex gap-3 border-b border-slate-400 p-8" key={props.id}>
-      <img
+      <Image
         src={author.imageUrl}
         alt="Profile Image"
-        className="h-16 w-16 rounded-full"
+        className="rounded-full"
+        height={56}
+        width={56}
       />
       <div className="flex flex-col">
-        <div className="flex gap-2 text-slate-300">
-          <span>{`@${author.username}`}</span>
+        <div className="flex gap-2 text-slate-500">
+          <span className="font-bold text-slate-300">{`@${author.username}`}</span>
           <span>·</span>
           <span>{dayjs().to(createdAt)}</span>
         </div>
@@ -51,14 +59,21 @@ const PostView = (props: PostWithUser) => {
   );
 };
 
+const Feed = () => {
+  const { data, isLoading: postsLoading } = api.posts.getAll.useQuery();
+  if (postsLoading) return <PageLoader />;
+
+  return <>{data?.map((post) => <PostView {...post} key={post.id} />)}</>;
+};
+
 export default function Home() {
-  const { isSignedIn } = useUser();
+  const { isSignedIn, isLoaded: userLoaded } = useUser();
 
-  const { data, isLoading } = api.posts.getAll.useQuery();
+  // start fetching before Feed component is mounted
+  api.posts.getAll.useQuery();
 
-  if (isLoading) return <div>Loading data...</div>;
-
-  if (!data) return <div>Sorry something went wrong!</div>;
+  // Return empty if user is not loaded
+  if(!userLoaded) return <div />
 
   return (
     <>
@@ -78,7 +93,7 @@ export default function Home() {
             {isSignedIn && <CreatePostWizard />}
           </div>
 
-          <div>{data?.map((post) => <PostView {...post} key={post.id} />)}</div>
+          <Feed />
         </div>
       </main>
     </>
