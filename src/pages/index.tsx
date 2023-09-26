@@ -36,7 +36,6 @@ type PostWithUser = RouterOutputs["posts"]["getAll"][number];
 
 const PostView = (props: PostWithUser) => {
   const { author, content, createdAt } = props;
-  console.log(author)
   // Todo make the profile blur
   return (
     <div className="flex gap-3 border-b border-slate-400 p-8" key={props.id}>
