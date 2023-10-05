@@ -2,7 +2,12 @@ import { clerkClient } from "@clerk/nextjs";
 import { type User } from "@clerk/nextjs/dist/types/server";
 import { TRPCError } from "@trpc/server";
 import { getPlaiceholder } from "plaiceholder";
-import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import { z } from "zod";
+import {
+  createTRPCRouter,
+  privateProcedure,
+  publicProcedure,
+} from "~/server/api/trpc";
 
 const filterUserFunction = (user: User) => ({
   id: user.id,
@@ -28,7 +33,14 @@ const toBase64 = async (imgUrl: string) => {
 
 export const postsRouter = createTRPCRouter({
   getAll: publicProcedure.query(async ({ ctx }) => {
-    const postsData = await ctx.db.post.findMany({ take: 100 });
+    const postsData = await ctx.db.post.findMany({
+      take: 100,
+      orderBy: [
+        {
+          createdAt: "desc",
+        },
+      ],
+    });
 
     const userList = (
       await clerkClient.users.getUserList({
@@ -62,4 +74,25 @@ export const postsRouter = createTRPCRouter({
       };
     });
   }),
+
+  createPosts: privateProcedure
+    .input(
+      z.object({
+        content: z.string().emoji().min(1).max(200),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const authorId = ctx.userId;
+
+      const post = await ctx.db.post.create({
+        data: {
+          authorId,
+          content: input.content,
+        },
+      });
+
+      console.log(post, "post");
+
+      return post;
+    }),
 });

@@ -4,6 +4,7 @@ import Head from "next/head";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import Image from "next/image";
+import { useState } from "react";
 import { PageLoader } from "~/components/Loading";
 import { api, type RouterOutputs } from "~/utils/api";
 
@@ -12,10 +13,22 @@ dayjs.extend(relativeTime);
 function CreatePostWizard() {
   const { user } = useUser();
 
+  const [input, setInput] = useState("");
+
+  const ctx = api.useContext();
+
+  const { mutate } = api.posts.createPosts.useMutation({
+    onSuccess: () => {
+      setInput("");
+      // add void instead as this function doesnt care about what happens to the promise
+      void ctx.posts.getAll.invalidate();
+    },
+  });
+
   if (!user) return null;
 
   return (
-    <div className="flex gap-3">
+    <div className="flex items-center gap-3">
       <Image
         src={user.imageUrl}
         alt="Profile Image"
@@ -26,8 +39,17 @@ function CreatePostWizard() {
       <input
         type="text"
         className="grow bg-transparent outline-none"
+        value={input}
         placeholder="Type some emojis to tweet"
+        onChange={(e) => setInput(e.target.value)}
       />
+
+      <button
+        className="rounded-full border-2 border-slate-100 px-5 py-2 hover:bg-slate-500/50"
+        onClick={() => mutate({ content: input })}
+      >
+        Post
+      </button>
     </div>
   );
 }
@@ -37,7 +59,6 @@ type PostWithUser = RouterOutputs["posts"]["getAll"][number];
 const PostView = (props: PostWithUser) => {
   const { author, content, createdAt } = props;
 
-  // Todo make the profile blur
   return (
     <div className="flex gap-3 border-b border-slate-400 p-8" key={props.id}>
       <Image
