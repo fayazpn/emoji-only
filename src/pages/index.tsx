@@ -1,11 +1,11 @@
 import { SignInButton, useUser } from "@clerk/nextjs";
 import Head from "next/head";
 
-import { type RouterOutputs, api } from "~/utils/api";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import Image from "next/image";
-import {  PageLoader } from "~/components/Loading";
+import { PageLoader } from "~/components/Loading";
+import { api, type RouterOutputs } from "~/utils/api";
 
 dayjs.extend(relativeTime);
 
@@ -36,7 +36,7 @@ type PostWithUser = RouterOutputs["posts"]["getAll"][number];
 
 const PostView = (props: PostWithUser) => {
   const { author, content, createdAt } = props;
-  console.log(author)
+
   // Todo make the profile blur
   return (
     <div className="flex gap-3 border-b border-slate-400 p-8" key={props.id}>
@@ -75,7 +75,7 @@ export default function Home() {
   api.posts.getAll.useQuery();
 
   // Return empty if user is not loaded
-  if(!userLoaded) return <div />
+  if (!userLoaded) return <div />;
 
   return (
     <>

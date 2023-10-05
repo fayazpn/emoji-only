@@ -1,8 +1,8 @@
 import { clerkClient } from "@clerk/nextjs";
 import { type User } from "@clerk/nextjs/dist/types/server";
 import { TRPCError } from "@trpc/server";
-import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import { getPlaiceholder } from "plaiceholder";
+import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 
 const filterUserFunction = (user: User) => ({
   id: user.id,
@@ -41,7 +41,6 @@ export const postsRouter = createTRPCRouter({
     const base64Results = await Promise.all(base64Promises);
 
     const userListWithBlur = userList.map((user, i) => {
-
       return { ...user, blurredDataUrl: base64Results[i]! };
     });
 
