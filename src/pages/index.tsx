@@ -5,6 +5,7 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import Image from "next/image";
 import { useState } from "react";
+import toast from "react-hot-toast";
 import { PageLoader } from "~/components/Loading";
 import { api, type RouterOutputs } from "~/utils/api";
 
@@ -17,11 +18,19 @@ function CreatePostWizard() {
 
   const ctx = api.useContext();
 
-  const { mutate } = api.posts.createPosts.useMutation({
+  const { mutate, isLoading: isPosting } = api.posts.createPosts.useMutation({
     onSuccess: () => {
       setInput("");
       // add void instead as this function doesnt care about what happens to the promise
       void ctx.posts.getAll.invalidate();
+    },
+    onError: (e) => {
+      const errorMessage = e.data?.zodError?.fieldErrors.content;
+      if (errorMessage?.[0]) {
+        toast.error(errorMessage[0]);
+      } else {
+        toast.error("Could not post. Please try again later!");
+      }
     },
   });
 
@@ -42,14 +51,21 @@ function CreatePostWizard() {
         value={input}
         placeholder="Type some emojis to tweet"
         onChange={(e) => setInput(e.target.value)}
+        disabled={isPosting}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            mutate({ content: input });
+          }
+        }}
       />
-
-      <button
-        className="rounded-full border-2 border-slate-100 px-5 py-2 hover:bg-slate-500/50"
-        onClick={() => mutate({ content: input })}
-      >
-        Post
-      </button>
+      {input !== "" && (
+        <button
+          className="rounded-full border-2 border-slate-100 px-5 py-2 hover:bg-slate-500/50"
+          onClick={() => mutate({ content: input })}
+        >
+          Post
+        </button>
+      )}
     </div>
   );
 }
