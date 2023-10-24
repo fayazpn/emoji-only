@@ -1,26 +1,41 @@
+import type { GetStaticPropsContext, NextPage } from "next";
 import Head from "next/head";
-import { type GetStaticPropsContext, type NextPage } from "next";
-import { api } from "~/utils/api";
 import { appRouter } from "~/server/api/root";
+import { api } from "~/utils/api";
 
-const ProfilePage: NextPage<{username: string}> = ({username}) => {
-  const user = api.profile.getUserByUsername.useQuery({ username });
+const ProfilePage: NextPage<{ username: string }> = ({ username }) => {
+  const { data } = api.profile.getUserByUsername.useQuery({ username });
+
+  if (!data) return <div>404 not found</div>;
 
   return (
     <>
       <Head>
         <title>{username}</title>
       </Head>
-      <main className="flex justify-center">
-        <div>Posts by id</div>
-      </main>
+      <PageLayout>
+        <div className="relative h-[200px] bg-slate-500">
+          <Image
+            alt={`${data.username}'s profile picture`}
+            src={data.imageUrl}
+            height={128}
+            width={128}
+            className="absolute bottom-0 -mb-[64px] ml-4 rounded-full border-4 border-black"
+          />
+        </div>
+        <div className="h-[64px]"></div>
+        <div className="p-4 text-2xl font-bold">{`@${username}`}</div>
+        <div className="w-full border-b border-slate-400" />
+      </PageLayout>
     </>
   );
 };
 
 import { createServerSideHelpers } from "@trpc/react-query/server";
-import { db } from "~/server/db";
+import Image from "next/image";
 import superjson from "superjson";
+import PageLayout from "~/components/PageLayout";
+import { db } from "~/server/db";
 
 export const getStaticProps = async (
   context: GetStaticPropsContext<{ slug: string }>,
@@ -31,24 +46,25 @@ export const getStaticProps = async (
     transformer: superjson, // optional - adds superjson serialization
   });
 
-  const slug = context.params?.slug
+  const slug = context.params?.slug;
 
-  if (typeof slug !== "string") throw new Error("no slug")
+  if (typeof slug !== "string") throw new Error("no slug");
 
-  const username = slug.replace("@", "")
+  const username = slug.replace("@", "");
 
-  await ssg.profile.getUserByUsername.prefetch({username: username})
+  await ssg.profile.getUserByUsername.prefetch({ username: username });
 
   return {
     props: {
       trpcState: ssg.dehydrate(),
-      username
-    }
-  }
+      username,
+    },
+  };
 };
 
 export const getStaticPaths = () => {
-  return {paths:[], fallback: "blocking"}
-}
+  // Generate on load only not on build time
+  return { paths: [], fallback: "blocking" };
+};
 
 export default ProfilePage;

@@ -1,14 +1,13 @@
 import { SignInButton, useUser } from "@clerk/nextjs";
-import Head from "next/head";
-
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { PageLoader } from "~/components/Loading";
+import PageLayout from "~/components/PageLayout";
 import { api, type RouterOutputs } from "~/utils/api";
-import Link from "next/link";
 
 dayjs.extend(relativeTime);
 
@@ -90,11 +89,11 @@ const PostView = (props: PostWithUser) => {
       <div className="flex flex-col">
         <div className="flex gap-2 text-slate-500">
           <Link href={`/@${author.username}`}>
-          <span className="font-bold text-slate-300">{`@${author.username}`}</span>
+            <span className="font-bold text-slate-300">{`@${author.username}`}</span>
           </Link>
           <Link href={`/posts/${id}`}>
-          <span>·{' '}</span>
-          <span>{dayjs().to(createdAt)}</span>
+            <span>· </span>
+            <span>{dayjs().to(createdAt)}</span>
           </Link>
         </div>
         <span>{content}</span>
@@ -121,20 +120,18 @@ export default function Home() {
 
   return (
     <>
-      <main className="flex justify-center scroll ">
-        <div className="w-full h-full overflow-y-auto border-x border-slate-400 md:max-w-2xl">
-          <div className=" w-full  border-b border-slate-400 p-4">
-            {!isSignedIn && (
-              <div className="flex justify-center">
-                <SignInButton />
-              </div>
-            )}
-            {isSignedIn && <CreatePostWizard />}
-          </div>
-
-          <Feed />
+      <PageLayout>
+        <div className=" flex border-b border-slate-400 p-4">
+          {!isSignedIn && (
+            <div className="flex justify-center">
+              <SignInButton />
+            </div>
+          )}
+          {isSignedIn && <CreatePostWizard />}
         </div>
-      </main>
+
+        <Feed />
+      </PageLayout>
     </>
   );
 }

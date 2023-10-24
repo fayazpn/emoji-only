@@ -1,19 +1,16 @@
-import Head from "next/head"
-import {type NextPage } from "next";
+import { type NextPage } from "next";
+import Head from "next/head";
+import PageLayout from "~/components/PageLayout";
 
 const SinglePostPage: NextPage = () => {
-
-
-    return (
-      <>
+  return (
+    <>
       <Head>
         <title>Post</title>
       </Head>
-        <main className="flex justify-center">
-            <div>Posts by id</div>
-        </main>
-      </>
-    );
-  }
+      <PageLayout>Posts by Id page</PageLayout>
+    </>
+  );
+};
 
-  export default SinglePostPage
+export default SinglePostPage;
