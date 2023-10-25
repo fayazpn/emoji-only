@@ -1,4 +1,5 @@
 import { clerkClient } from "@clerk/nextjs";
+import { type Post } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { Ratelimit } from "@upstash/ratelimit"; // for deno: see above
 import { Redis } from "@upstash/redis";
@@ -11,6 +12,41 @@ import {
   publicProcedure,
 } from "~/server/api/trpc";
 import { filterUserFunction } from "~/server/helpers/filterUserforClient";
+
+// Abstract util function to attach author data in post data
+const addAuthorDetailsOnPosts = async (postsData: Post[]) => {
+  const userList = (
+    await clerkClient.users.getUserList({
+      limit: 100,
+      userId: postsData.map((post) => post.authorId),
+    })
+  ).map(filterUserFunction);
+
+  // const base64Promises = userList.map((user) => toBase64(user.imageUrl));
+  // const base64Results = await Promise.all(base64Promises);
+
+  // const userListWithBlur = userList.map((user, i) => {
+  //   return { ...user, blurredDataUrl: base64Results[i]! };
+  // });
+
+  return postsData.map((post) => {
+    const author = userList.find((user) => user.id === post.authorId);
+
+    if (!author?.username)
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Author not found!",
+      });
+
+    return {
+      ...post,
+      author: {
+        ...author,
+        username: author.username,
+      },
+    };
+  });
+};
 
 const toBase64 = async (imgUrl: string) => {
   try {
@@ -52,37 +88,7 @@ export const postsRouter = createTRPCRouter({
       ],
     });
 
-    const userList = (
-      await clerkClient.users.getUserList({
-        limit: 100,
-        userId: postsData.map((post) => post.authorId),
-      })
-    ).map(filterUserFunction);
-
-    const base64Promises = userList.map((user) => toBase64(user.imageUrl));
-    const base64Results = await Promise.all(base64Promises);
-
-    const userListWithBlur = userList.map((user, i) => {
-      return { ...user, blurredDataUrl: base64Results[i]! };
-    });
-
-    return postsData.map((post) => {
-      const author = userListWithBlur.find((user) => user.id === post.authorId);
-
-      if (!author?.username)
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Author not found!",
-        });
-
-      return {
-        ...post,
-        author: {
-          ...author,
-          username: author.username,
-        },
-      };
-    });
+    return addAuthorDetailsOnPosts(postsData);
   }),
 
   createPosts: privateProcedure
@@ -115,4 +121,23 @@ export const postsRouter = createTRPCRouter({
 
       return post;
     }),
+
+  getPostsByUserId: publicProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+      }),
+    )
+    .query(
+      async ({ ctx, input }) =>
+        await ctx.db.post
+          .findMany({
+            where: {
+              authorId: input.userId,
+            },
+            take: 100,
+            orderBy: [{ createdAt: "desc" }],
+          })
+          .then(addAuthorDetailsOnPosts),
+    ),
 });
