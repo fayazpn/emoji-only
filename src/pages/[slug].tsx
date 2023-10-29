@@ -3,14 +3,13 @@ import Head from "next/head";
 import { appRouter } from "~/server/api/root";
 import { api } from "~/utils/api";
 
-const ProfileFeed = (props: { username: string }) => {
+const ProfileFeed = (props: { userId: string }) => {
   const { data, isLoading } = api.posts.getPostsByUserId.useQuery({
-    userId: props.username,
+    userId: props.userId,
   });
 
+  if (isLoading) return <PageLoader />;
   if (!data || data.length === 0) return <div>User has not posted yet!</div>;
-
-  if (isLoading) return <Loading />;
 
   return (
     <>
@@ -46,7 +45,7 @@ const ProfilePage: NextPage<{ username: string }> = ({ username }) => {
         <div className="p-4 text-2xl font-bold">{`@${username}`}</div>
         <div className="w-full border-b border-slate-400" />
 
-        <ProfileFeed username={username} />
+        <ProfileFeed userId={data.id} />
       </PageLayout>
     </>
   );
@@ -55,7 +54,7 @@ const ProfilePage: NextPage<{ username: string }> = ({ username }) => {
 import { createServerSideHelpers } from "@trpc/react-query/server";
 import Image from "next/image";
 import superjson from "superjson";
-import { Loading } from "~/components/Loading";
+import { PageLoader } from "~/components/Loading";
 import PageLayout from "~/components/PageLayout";
 import PostView from "~/components/PostView";
 import { db } from "~/server/db";
@@ -74,7 +73,7 @@ export const getStaticProps = async (
   if (typeof slug !== "string") throw new Error("no slug");
 
   const username = slug.replace("@", "");
-
+  console.log(username, "username");
   await ssg.profile.getUserByUsername.prefetch({ username: username });
 
   return {

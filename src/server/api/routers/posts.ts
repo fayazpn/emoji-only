@@ -22,15 +22,15 @@ const addAuthorDetailsOnPosts = async (postsData: Post[]) => {
     })
   ).map(filterUserFunction);
 
-  // const base64Promises = userList.map((user) => toBase64(user.imageUrl));
-  // const base64Results = await Promise.all(base64Promises);
+  const base64Promises = userList.map((user) => toBase64(user.imageUrl));
+  const base64Results = await Promise.all(base64Promises);
 
-  // const userListWithBlur = userList.map((user, i) => {
-  //   return { ...user, blurredDataUrl: base64Results[i]! };
-  // });
+  const userListWithBlur = userList.map((user, i) => {
+    return { ...user, blurredDataUrl: base64Results[i]! };
+  });
 
   return postsData.map((post) => {
-    const author = userList.find((user) => user.id === post.authorId);
+    const author = userListWithBlur.find((user) => user.id === post.authorId);
 
     if (!author?.username)
       throw new TRPCError({
@@ -90,7 +90,26 @@ export const postsRouter = createTRPCRouter({
 
     return addAuthorDetailsOnPosts(postsData);
   }),
-
+  getPostsByUserId: publicProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+      }),
+    )
+    .query(({ ctx, input }) =>
+      ctx.db.post
+        .findMany({
+          where: {
+            authorId: input.userId,
+          },
+          take: 100,
+          orderBy: [{ createdAt: "desc" }],
+        })
+        .then((postsWithoutAuthour) => {
+          console.log(postsWithoutAuthour, "Posts without author");
+          return addAuthorDetailsOnPosts(postsWithoutAuthour);
+        }),
+    ),
   createPosts: privateProcedure
     .input(
       z.object({
@@ -121,23 +140,4 @@ export const postsRouter = createTRPCRouter({
 
       return post;
     }),
-
-  getPostsByUserId: publicProcedure
-    .input(
-      z.object({
-        userId: z.string(),
-      }),
-    )
-    .query(
-      async ({ ctx, input }) =>
-        await ctx.db.post
-          .findMany({
-            where: {
-              authorId: input.userId,
-            },
-            take: 100,
-            orderBy: [{ createdAt: "desc" }],
-          })
-          .then(addAuthorDetailsOnPosts),
-    ),
 });
