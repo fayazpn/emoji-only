@@ -110,6 +110,18 @@ export const postsRouter = createTRPCRouter({
           return addAuthorDetailsOnPosts(postsWithoutAuthour);
         }),
     ),
+  getById: publicProcedure
+    .input(z.object({ postId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const post = await ctx.db.post.findUnique({
+        where: {
+          id: input.postId,
+        },
+      });
+      if (!post) throw new TRPCError({ code: "NOT_FOUND" });
+
+      return (await addAuthorDetailsOnPosts([post]))[0]
+    }),
   createPosts: privateProcedure
     .input(
       z.object({
